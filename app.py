@@ -82,15 +82,23 @@ def query_handling_and_ranking(query, location):
         if key not in query_df.keys():
             query_df[key] = 0.0
 
+    lfr = list()
+    for l in list_for_ranking:
+        if l[1] == location:
+            lfr.append(l)
+
     final_list_for_ranking = []
-    for rev in list_for_ranking:
+    for rev in lfr:
         flag = True
         for key in rev[2].keys():
-            if rev[2][key] < query_df[key]-0.1:
+            if rev[2][key] < query_df[key]-0.2:
                 flag = False
 
         if flag == True:
             final_list_for_ranking.append(rev)
+
+    if len(final_list_for_ranking) < 5:
+        final_list_for_ranking = lfr
 
     final_list_for_ranking = (
         sorted(final_list_for_ranking, key=lambda l: l[-1], reverse=True))
@@ -101,7 +109,7 @@ def query_handling_and_ranking(query, location):
 @app.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'GET':
-        data = {"": ["", "", "", "", ""]}
+        data = {"": ["", "", "", "", "", ""]}
         return render_template('view.html', locationlist=loclist, data=data)
     elif request.method == 'POST':
         query = request.form['query']
@@ -110,15 +118,19 @@ def index():
         '''Function Call'''
         flfr = query_handling_and_ranking(query, location)
         '''Filter Location'''
+        print("\n", flfr)
         data = dict()
+        count = 0
         for dl in flfr:
             tempList = list(dl[2].values())
             tempList.append(dl[3])
-            if len(tempList) == 6:
-                formattedList = ['%.2f' % elem for elem in tempList]
-                data[dl[0]] = formattedList
+            formattedList = ['%.2f' % elem for elem in tempList]
+            formattedList.append(dl[0])
+            data[count] = formattedList
+            count += 1
+
         return render_template('view.html', locationlist=loclist, data=data)
 
 
 if __name__ == '__main__':
-    app.run()
+    app.run(debug=True)
